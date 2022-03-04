@@ -26,9 +26,12 @@ fn main() -> anyhow::Result<()> {
                     log::info!("Event loop initialized.");
                 }
                 _ => {}
-            },
+            }
             Event::WindowEvent { event, .. } => {
                 log::trace!("Got window event: {event:?}.");
+            }
+            Event::DeviceEvent { device_id, event } => {
+                log::trace!("Got device event: {device_id:?}, {event:?}.");
             }
             Event::MainEventsCleared => {
                 log::trace!("Events cleared. Updating...");
