@@ -492,6 +492,7 @@ dependencies = [
  "env_logger",
  "glam",
  "log",
+ "once_cell",
  "pollster",
  "raw-window-handle",
  "thiserror",
