@@ -1,14 +1,13 @@
 use self::htb::Settings;
-use crate::htb::event::Event;
 use crate::htb::App;
 use std::path::PathBuf;
 use winit::dpi::PhysicalSize;
 use winit::event::Event as SysEvent;
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
+use htb::Event;
 
 mod htb;
-mod view;
 
 fn main() -> anyhow::Result<()> {
     let env_path = load_env();

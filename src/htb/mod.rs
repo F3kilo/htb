@@ -1,9 +1,11 @@
-use crate::view::View;
+use crate::htb::view::View;
+pub use event::Event;
 use winit::event::{DeviceEvent, WindowEvent};
 use winit::window::{Fullscreen, Window};
-use crate::Event;
 
-pub mod event;
+mod event;
+mod menu;
+mod view;
 
 pub struct App {
     settings: Settings,
@@ -21,15 +23,23 @@ impl App {
     }
 
     pub fn app_event(&mut self, event: Event) {
-        todo!()
+        match event {
+            Event::StartGame => {
+                log::info!("Starting game")
+            }
+            _ => {}
+        }
     }
 
     pub fn window_event(&mut self, event: WindowEvent) {
-        todo!()
+        match event {
+            WindowEvent::CloseRequested => Event::Exit.send(),
+            _ => self.view.window_event(event),
+        }
     }
 
     pub fn device_event(&mut self, event: DeviceEvent) {
-        todo!()
+        self.view.device_event(event)
     }
 
     pub fn update(&mut self) {
