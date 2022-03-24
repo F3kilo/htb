@@ -1,6 +1,7 @@
 use crate::Event;
 use model::Model;
 use winit::event::WindowEvent;
+use crate::htb::view::Gfx;
 
 pub mod model;
 
@@ -18,6 +19,10 @@ impl Menu {
     }
 
     pub fn window_event(&mut self, _event: WindowEvent) {
-        todo!()
+        // todo!()
+    }
+
+    pub fn render(&self, gfx: &impl Gfx) {
+        // todo!()
     }
 }
