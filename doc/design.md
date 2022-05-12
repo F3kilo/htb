@@ -29,6 +29,15 @@ Player controls ship, that flies through dangerous galaxy regions, which connect
 ## Content
 
 ### Proof of concept
+- Menu:
+    - Start game.
+    - Settings:
+        - Game.
+        - Graphics:
+            - Screen mode.
+            - VSync.
+        - Audio.
+    - Exit.
 - Two ships:
     - Lightweight ship with good speed, one additional module cell and good power regeneration rate.
     - Heavy and slow ship with significantly increased integrity and energy capacity and three additional module cells.
