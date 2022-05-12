@@ -23,4 +23,19 @@ Player controls ship, that flies through dangerous galaxy regions, which connect
 ## Gameplay in region
 - Ship spawns near to wormhole.
 - Radar detects close enemies and objects of interest.
-- Primary task is to achieve wormhole to next region. All wormholes are protected by enemies. Player should destroy them before he can travel.
+- Primary task is to achieve wormhole to next region. All wormholes are protected by enemy squads. Player should destroy them before he can travel.
+
+## Content
+
+### Proof of concept
+- Two weapon categories:
+    - Lasers
+    - Rockets
+- Two weapons in each category:
+    - Lasers:
+        - Powerful but long-to-reload beam.
+        - Permanent ray with low damage.
+    - Rockets:
+        - One rocket 
+        - Batch of small rockets flies to different targets.
+- Two modules
