@@ -14,6 +14,7 @@ Player controls ship, that flies through dangerous galaxy regions, which connect
 - Player selects crew members races and their innate abilities before game starts.
 - Crew members get perks when they gain enough experience.
 - Crew members perks and abilities defined by their role on ship.
+- Ship has integrity and power parameters. Integrity decreased with each damage, which wasn't stopped by shields. It restores between regions from collected ship parts. Power supplies ship shields and energetic weapons.
 
 ## Before game starts
 - Player selects a ship model.
@@ -28,14 +29,22 @@ Player controls ship, that flies through dangerous galaxy regions, which connect
 ## Content
 
 ### Proof of concept
+- Two ships:
+    - Lightweight ship with good speed, one additional module cell and good power regeneration rate.
+    - Heavy and slow ship with significantly increased integrity and energy capacity and three additional module cells.
 - Two weapon categories:
-    - Lasers
-    - Rockets
-- Two weapons in each category:
     - Lasers:
         - Powerful but long-to-reload beam.
         - Permanent ray with low damage.
     - Rockets:
-        - One rocket 
-        - Batch of small rockets flies to different targets.
-- Two modules
+        - One rocket with high damage to integrity.
+        - Batch of small rockets, that flies to different targets.
+- Two core modules:
+    - Power accumulator, that allows to instantly get energy boost.
+    - Maneuver drives, that allows to dodge enemy fire.
+    - Additional solid fuel engines, that allows to get high acceleration, while fuel is present.
+- Four additional modules:
+    - Anti-projectile autocannon, that has a chance to destroy hostile projectile.
+    - Speed booster increases basis speed of the ship.
+    - Weapon cooling unit, that reduces laser energy consumption.
+    - Reserve rockets parts, that reduces ship parts required to create new rockets.
