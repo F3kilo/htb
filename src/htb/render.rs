@@ -49,10 +49,6 @@ impl Default for RenderSettings {
 }
 
 impl Gfx for Render {
-    fn draw_rect(&self, _top_left: Vec2, _bot_right: Vec2) {
-        // todo!()
-    }
-
     fn present(&self) {
         // todo!()
     }

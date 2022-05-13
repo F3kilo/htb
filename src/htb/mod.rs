@@ -1,6 +1,6 @@
-use crate::htb::view::View;
 pub use event::Event;
 use render::{Render, RenderSettings};
+use view::View;
 use winit::event::{DeviceEvent, WindowEvent};
 use winit::window::{Fullscreen, Window};
 
@@ -12,7 +12,7 @@ mod view;
 pub struct App {
     settings: Settings,
     window: Window,
-    view: View,
+    menu: Option<Menu>,
     render: Render,
 }
 
@@ -38,7 +38,7 @@ impl App {
         Self {
             settings,
             window,
-            view: View::default(),
+
             render,
         }
     }

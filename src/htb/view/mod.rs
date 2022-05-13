@@ -1,11 +1,8 @@
 use super::event::Event;
-use crate::htb::view::menu::model::Model;
 use game::Game;
-use menu::Menu;
 use winit::event::{DeviceEvent, WindowEvent};
 
 mod game;
-pub mod menu;
 
 #[derive(Default)]
 pub struct View {
@@ -14,7 +11,7 @@ pub struct View {
 }
 
 impl View {
-    pub fn with_menu(menu_model: Model<Event>) -> Self {
+    pub fn new(menu_model: Model<Event>) -> Self {
         Self {
             menu: Some(Menu::new(menu_model)),
             game: Game::default(),
@@ -28,7 +25,7 @@ impl View {
     }
 
     pub fn device_event(&mut self, _event: DeviceEvent) {
-       // todo!()
+        // todo!()
     }
 
     pub fn draw(&self, gfx: &impl Gfx) {
@@ -37,11 +34,9 @@ impl View {
         } else {
             self.game.render(gfx);
         }
-
     }
 }
 
 pub trait Gfx {
-    fn draw_rect(&self, top_left: glam::Vec2, bot_right: glam::Vec2);
     fn present(&self);
 }

@@ -1,5 +1,5 @@
-use winit::event::DeviceEvent;
 use crate::htb::view::Gfx;
+use winit::event::DeviceEvent;
 
 #[derive(Default)]
 pub struct Game {}

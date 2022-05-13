@@ -1,33 +1,28 @@
+use crate::menu::model;
 use crate::Event;
 use std::collections::HashMap;
-use crate::htb::view::menu::model::{Button, Control, ControlType, Filling, Model, Page, Tab};
 
-pub fn new_main_menu() -> Model<Event> {
+pub fn new_main_menu() -> model::Model<Event> {
     let controls = vec![
-        Control {
+        model::Control {
             tab: 0,
             group: None,
-            typ: ControlType::Button(Button {
-                filling: Filling::Text("Start".into()),
+            typ: model::ControlType::Button(model::Button {
+                filling: model::Filling::Text("Start".into()),
             }),
             handlers: HashMap::from([]),
         },
-        Control {
+        model::Control {
             tab: 0,
             group: None,
-            typ: ControlType::Button(Button {
-                filling: Filling::Text("Exit".into()),
+            typ: model::ControlType::Button(model::Button {
+                filling: model::Filling::Text("Exit".into()),
             }),
             handlers: HashMap::from([]),
         },
     ];
 
-    let tab = Tab {
-        name: "Main menu".into(),
-    };
-
-    let main_page = Page {
-        tabs: vec![tab],
+    let main_page = model::Page {
         start_tab: 0,
         groups: vec![],
         controls,

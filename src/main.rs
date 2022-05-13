@@ -1,13 +1,14 @@
 use self::htb::Settings;
 use crate::htb::App;
+use htb::Event;
 use std::path::PathBuf;
 use winit::dpi::PhysicalSize;
 use winit::event::Event as SysEvent;
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
-use htb::Event;
 
 mod htb;
+pub mod menu;
 
 fn main() -> anyhow::Result<()> {
     let env_path = load_env();
@@ -42,6 +43,7 @@ fn main() -> anyhow::Result<()> {
                 app.device_event(event);
             }
             SysEvent::UserEvent(event) => {
+                log::trace!("Got user event: {event:?}.");
                 if let Event::Exit = event {
                     *flow = ControlFlow::Exit;
                 }
