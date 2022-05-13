@@ -1,8 +1,18 @@
 use std::collections::HashMap;
 
-pub struct Control<Event> {
+use super::MenuEvent;
+
+pub struct Control<E> {
     pub typ: ControlType,
-    pub handlers: HashMap<Action, Event>,
+    pub handlers: HashMap<Action, E>,
+}
+
+impl<E: MenuEvent> Control<E> {
+    pub fn action(&self, action: Action) {
+        if let Some(event) = self.handlers.get(&action) {
+            event.send()
+        }
+    }
 }
 
 pub enum ControlType {

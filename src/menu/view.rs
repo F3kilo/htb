@@ -7,12 +7,12 @@ pub trait RenderMenu {
 pub struct MenuView {
     pub cursor: CursorView,
     pub controls: Vec<ControlView>,
-    pub focused: Option<usize>,
+    pub hovered: Option<usize>,
     pub frame: FrameView,
 }
 
 pub enum ControlView {
-    Button(ButtonView)
+    Button(ButtonView),
 }
 
 pub struct ButtonView {
@@ -26,5 +26,5 @@ pub struct CursorView {
 }
 
 pub struct FrameView {
-    pub place: Rectangle
+    pub place: Rectangle,
 }

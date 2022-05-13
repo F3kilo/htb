@@ -2,7 +2,9 @@ use once_cell::sync::OnceCell;
 use std::sync::Mutex;
 use winit::event_loop::EventLoopProxy;
 
-#[derive(Debug)]
+use crate::menu::MenuEvent;
+
+#[derive(Debug, Clone, Copy)]
 pub enum Event {
     StartGame,
     Exit,
@@ -25,6 +27,12 @@ impl Event {
         EVENT_LOOP_PROXY
             .set(Mutex::new(proxy))
             .expect("Global event loop proxy initialized twice.");
+    }
+}
+
+impl MenuEvent for Event {
+    fn send(&self) {
+        Event::send(*self)
     }
 }
 

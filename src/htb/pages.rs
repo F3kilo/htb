@@ -1,4 +1,4 @@
-use crate::menu::{Page, model};
+use crate::menu::{model, Page};
 use crate::Event;
 use std::collections::HashMap;
 
@@ -20,8 +20,5 @@ pub fn main_menu() -> Page<Event> {
         },
     ];
 
-    Page {
-        controls,
-        focused: Some(0)
-    }
+    Page::new(controls)
 }
