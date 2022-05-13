@@ -9,14 +9,14 @@ pub fn main_menu() -> Page<Event> {
                 enabled: true,
                 text: String::from("Start game"),
             }),
-            handlers: HashMap::from([]),
+            handlers: HashMap::from([(model::Action::Click, Event::StartGame)]),
         },
         model::Control {
             typ: model::ControlType::Button(model::Button {
                 enabled: true,
                 text: String::from("Exit"),
             }),
-            handlers: HashMap::from([]),
+            handlers: HashMap::from([(model::Action::Click, Event::Exit)]),
         },
     ];
 
