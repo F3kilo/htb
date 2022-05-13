@@ -4,6 +4,7 @@ use super::MenuEvent;
 
 pub struct Control<E> {
     pub typ: ControlType,
+    pub enabled: bool,
     pub handlers: HashMap<Action, E>,
 }
 
@@ -21,7 +22,6 @@ pub enum ControlType {
 
 pub struct Button {
     pub text: String,
-    pub enabled: bool,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
