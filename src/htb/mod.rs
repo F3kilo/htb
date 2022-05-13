@@ -58,10 +58,6 @@ impl App {
 
     pub fn device_event(&mut self, event: DeviceEvent) {}
 
-    pub fn update(&mut self) {
-        // todo!()
-    }
-
     pub fn draw(&self) {}
 }
 

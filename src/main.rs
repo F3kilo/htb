@@ -52,8 +52,6 @@ fn main() -> anyhow::Result<()> {
                 app.app_event(event)
             }
             SysEvent::MainEventsCleared => {
-                log::trace!("Events cleared. Updating...");
-                app.update();
                 log::trace!("Updated. Rendering...");
                 app.draw();
             }
