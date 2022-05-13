@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_variables)]
+
 use self::htb::Settings;
 use crate::htb::App;
 use htb::Event;

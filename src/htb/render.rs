@@ -1,5 +1,3 @@
-use crate::htb::view::Gfx;
-use glam::Vec2;
 use winit::window::Window;
 
 pub struct Render {
@@ -45,11 +43,5 @@ impl Default for RenderSettings {
         Self {
             backends: wgpu::Backends::all(),
         }
-    }
-}
-
-impl Gfx for Render {
-    fn present(&self) {
-        // todo!()
     }
 }

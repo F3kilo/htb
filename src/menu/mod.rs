@@ -47,9 +47,8 @@ impl<'a, Event: 'a, Inner: Iterator<Item = &'a Control<Event>>> Iterator
 
     fn next(&mut self) -> Option<Self::Item> {
         let left_top = glam::vec2(-Self::BUTTON_WIDTH / 2.0, self.top);
-        self.top += Self::BUTTON_HEIGHT;
-        let right_bot = glam::vec2(Self::BUTTON_WIDTH / 2.0, self.top);
-        self.top += Self::PADDING;
+        let right_bot = glam::vec2(Self::BUTTON_WIDTH / 2.0, self.top - Self::BUTTON_HEIGHT);
+        self.top -= Self::PADDING + Self::BUTTON_HEIGHT;
         
         Some(Rectangle {
             left_top,
@@ -58,7 +57,7 @@ impl<'a, Event: 'a, Inner: Iterator<Item = &'a Control<Event>>> Iterator
     }
 }
 
-struct Rectangle {
+pub struct Rectangle {
     left_top: glam::Vec2,
     right_bot: glam::Vec2,
 }

@@ -1,18 +1,17 @@
+use crate::menu::Page;
 pub use event::Event;
 use render::{Render, RenderSettings};
-use view::View;
 use winit::event::{DeviceEvent, WindowEvent};
 use winit::window::{Fullscreen, Window};
 
 mod event;
-mod menu;
+mod pages;
 mod render;
-mod view;
 
 pub struct App {
     settings: Settings,
     window: Window,
-    menu: Option<Menu>,
+    menu_page: Option<Page<Event>>,
     render: Render,
 }
 
@@ -35,41 +34,35 @@ impl App {
             render.expect("Render initialization failed.")
         });
 
+        let menu_page = Some(pages::main_menu());
+
         Self {
             settings,
             window,
-
+            menu_page,
             render,
         }
     }
 
     pub fn app_event(&mut self, event: Event) {
-        match event {
-            Event::StartGame => {
-                log::info!("Starting game")
-            }
-            _ => {}
+        if let Event::StartGame = event {
+            log::info!("Starting game")
         }
     }
 
     pub fn window_event(&mut self, event: WindowEvent) {
-        match event {
-            WindowEvent::CloseRequested => Event::Exit.send(),
-            _ => self.view.window_event(event),
+        if let WindowEvent::CloseRequested = event {
+            Event::Exit.send()
         }
     }
 
-    pub fn device_event(&mut self, event: DeviceEvent) {
-        self.view.device_event(event)
-    }
+    pub fn device_event(&mut self, event: DeviceEvent) {}
 
     pub fn update(&mut self) {
         // todo!()
     }
 
-    pub fn draw(&self) {
-        self.view.draw(&self.render);
-    }
+    pub fn draw(&self) {}
 }
 
 #[derive(Default)]

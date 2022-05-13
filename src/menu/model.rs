@@ -10,15 +10,11 @@ pub enum ControlType {
 }
 
 pub struct Button {
-    pub filling: Filling,
+    pub text: String,
     pub enabled: bool,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum Action {
     Click,
-}
-
-pub enum Filling {
-    Text(String),
 }
