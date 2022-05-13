@@ -1,13 +1,9 @@
 use super::Rectangle;
 
-pub trait RenderMenu {
-    fn render(&self, menu: &MenuView);
-}
-
-pub struct MenuView {
-    pub cursor: CursorView,
+pub struct PageView {
     pub controls: Vec<ControlView>,
     pub hovered: Option<usize>,
+    pub pressed: Option<usize>,
     pub frame: FrameView,
 }
 

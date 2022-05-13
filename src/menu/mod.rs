@@ -1,6 +1,7 @@
 use model::Control;
 
-use self::model::Action;
+use self::model::{Action, ControlType};
+use self::view::{ButtonView, ControlView, FrameView, PageView};
 
 pub mod model;
 pub mod view;
@@ -51,6 +52,35 @@ impl<E: MenuEvent> Page<E> {
         }
 
         self.pressed = None
+    }
+
+    pub fn view(&self) -> PageView {
+        let control_place_iter = self.controls.iter().zip(self.places_iter());
+        let controls = control_place_iter
+            .map(|(control, place)| match &control.typ {
+                ControlType::Button(btn) => {
+                    let button = ButtonView {
+                        enabled: control.enabled,
+                        place,
+                        text: btn.text.clone(),
+                    };
+                    ControlView::Button(button)
+                }
+            })
+            .collect();
+
+        let place = Rectangle {
+            left_top: glam::vec2(-0.9, 0.9),
+            right_bot: glam::vec2(0.9, -0.9),
+        };
+        let frame = FrameView { place };
+
+        PageView {
+            controls,
+            hovered: self.hovered,
+            pressed: self.pressed,
+            frame,
+        }
     }
 
     fn places_iter(&self) -> impl Iterator<Item = Rectangle> + '_ {
