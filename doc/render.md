@@ -3,8 +3,10 @@
 ## Features
 - Render to different layers.
 - Mixing layers for presentation.
-- Drawing colored geometry.
-- Depth test settings for each layer.
+- Colored mesh.
+- Textured mesh.
+- Fixed mesh and texture buffers.
+- Scene-based render.
 
 ## Resource management
 - Asynchronous resources loading.
