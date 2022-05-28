@@ -1,7 +1,7 @@
 # Hold the broadcast design
 
 ## General concepts
-Player controls ship, that flies through dangerous galaxy regions, which connected with wormholes. Crew of ship tries to spread information that exposing galaxy council. Government forces effort to stop and destroy rebellion ship. There is no hope to survive against all power of mighty galaxy army. But the more people get evidences, the chances to bring down cruel regime.
+Player controls ship, that flies through star systems of galaxy, which connected with teleports. Crew of ship tries to spread information that exposing galaxy council. Government forces effort to stop and destroy rebellion ship. There is no hope to survive against all power of mighty galaxy army. But the more people get evidences, the more chances to bring down cruel regime in the future.
 
 ## General mechanics
 - Third person camera follows the ship, that flies through different space locations and fights with enemy forces.
