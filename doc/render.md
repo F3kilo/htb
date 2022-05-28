@@ -1,10 +1,9 @@
 # Render prototype
 
 ## Features
-- Render to different layers.
-- Mixing layers for presentation.
-- Drawing colored geometry.
-- Depth test settings for each layer.
+- Render scenes to window on top of each other.
+- Drawing colored mesh.
+- Drawing textured mesh.
 
 ## Resource management
 - Asynchronous resources loading.
@@ -12,4 +11,7 @@
 - Load batches of resources with fixed size for each frame.
 
 ## Future
-Size of resources batch depends on GPU performance.
+- Size of resources batch depends on GPU performance.
+- Render to different targets.
+- Use targets as textures.
+- Copy targets to textures.
