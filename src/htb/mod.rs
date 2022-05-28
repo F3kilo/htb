@@ -1,6 +1,6 @@
 use crate::menu::Page;
 pub use event::Event;
-use render::{Render, RenderSettings};
+use render::Render;
 use winit::event::{DeviceEvent, WindowEvent};
 use winit::window::{Fullscreen, Window};
 
@@ -22,7 +22,7 @@ impl App {
                 "Can't initialize render with settings: {:?}. Trying with default...",
                 settings.render
             );
-            let default_render_settings = RenderSettings::default();
+            let default_render_settings = render::Settings::default();
             let render = Render::with_settings(&default_render_settings, &window);
             if render.is_none() {
                 log::error!("Render initialization failed.");
@@ -64,7 +64,7 @@ impl App {
 #[derive(Default)]
 pub struct Settings {
     pub screen: ScreenSettings,
-    pub render: RenderSettings,
+    pub render: render::Settings,
 }
 
 impl Settings {

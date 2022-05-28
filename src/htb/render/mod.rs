@@ -1,13 +1,7 @@
 pub mod resource;
 pub mod scene;
-
-use std::io::Read;
 use winit::window::Window;
-
-use self::{
-    resource::{Mesh, Texture},
-    scene::Scene,
-};
+use self::{resource::ResourceLoader, scene::Scene};
 
 pub struct Render {
     device: wgpu::Device,
@@ -16,7 +10,7 @@ pub struct Render {
 }
 
 impl Render {
-    pub fn with_settings(settings: &RenderSettings, window: &Window) -> Option<Self> {
+    pub fn with_settings(settings: &Settings, window: &Window) -> Option<Self> {
         let instance = wgpu::Instance::new(settings.backends);
         let surface = unsafe { instance.create_surface(window) };
         let (device, queue) = pollster::block_on(Self::request_device(&instance, &surface))?;
@@ -28,15 +22,11 @@ impl Render {
         })
     }
 
-    pub fn add_mesh(&mut self, data_src: impl Read) -> Mesh {
+    pub fn resource_loader(&self) -> ResourceLoader {
         todo!()
     }
 
-    pub fn add_texture(&mut self, data_src: impl Read) -> Texture {
-        todo!()
-    }
-
-    pub fn render<T>(&self, layer: usize, scene: &Scene, info: &RenderInfo) {
+    pub fn render<T>(&self, scene: &Scene, info: &RenderInfo) {
         todo!()
     }
 
@@ -63,11 +53,11 @@ impl Render {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct RenderSettings {
+pub struct Settings {
     backends: wgpu::Backends,
 }
 
-impl Default for RenderSettings {
+impl Default for Settings {
     fn default() -> Self {
         Self {
             backends: wgpu::Backends::all(),
@@ -80,5 +70,3 @@ pub struct RenderInfo {
     view: glam::Mat4,
     proj: glam::Mat4,
 }
-
-pub type ResourceId = u64;
