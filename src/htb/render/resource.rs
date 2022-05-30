@@ -6,21 +6,22 @@ pub struct Mesh(Arc<ResourceInner>);
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Texture(Arc<ResourceInner>);
 
-struct ResourceInner {
+pub(crate) struct ResourceInner {
     id: ResourceId,
     loaded: AtomicBool,
+    loader: ResourceLoader,
     src: Box<dyn DataSource>
 }
 
 pub trait Resource: From<ResourceInner> {
+    fn new(loader: ResourceLoader, data_src: Box<dyn DataSource>) -> Self {
+
+    }
+
     fn inner(&self) -> &ResourceInner;
 
     fn is_loaded(&self) -> bool {
         self.inner().loaded.load(Ordering::SeqCst)
-    }
-
-    fn reload(&self) {
-        let inner = self.inner();
     }
 }
 
@@ -43,11 +44,12 @@ pub trait ResourceData {}
 pub struct ResourceLoader {}
 
 impl ResourceLoader {
-    pub fn load_resource<T: Resource>(&self, data_src: Box<dyn DataSource>) -> T {
-        
-    }
+    fn load(&self, resource: Arc<ResourceInner>) {
+        if resource.is_loaded() {
+            log::info!("try to load resource which is loaded already {resource}");
+            return;
+        }
 
-    pub fn reload(&self, resource: &impl Resource) {
-        todo!("get resource id and send command to reload it")
+        
     }
 }
