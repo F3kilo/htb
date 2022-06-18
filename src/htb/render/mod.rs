@@ -1,7 +1,7 @@
 pub mod resource;
 pub mod scene;
 use winit::window::Window;
-use self::{resource::ResourceLoader, scene::Scene};
+use self::{resource::ResourceSender, scene::Scene};
 
 pub struct Render {
     device: wgpu::Device,
@@ -22,7 +22,7 @@ impl Render {
         })
     }
 
-    pub fn resource_loader(&self) -> ResourceLoader {
+    pub fn resource_loader(&self) -> ResourceSender {
         todo!()
     }
 
