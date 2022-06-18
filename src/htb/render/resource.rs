@@ -1,7 +1,8 @@
 use std::{
     fmt::{self},
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
+        mpsc::{SendError, SyncSender},
         Arc,
     },
 };
@@ -15,12 +16,12 @@ pub struct Texture(Arc<ResourceInner>);
 pub(crate) struct ResourceInner {
     id: ResourceId,
     loaded: AtomicBool,
-    sender: ResourceSender,
+    sender: Sender,
     src: Box<dyn DataSource>,
 }
 
 impl ResourceInner {
-    pub fn new(sender: ResourceSender, src: Box<dyn DataSource>) -> Self {
+    pub fn new(sender: Sender, src: Box<dyn DataSource>) -> Self {
         Self {
             id: new_id(),
             loaded: Default::default(),
@@ -71,7 +72,7 @@ impl std::hash::Hash for ResourceInner {
 pub(crate) trait Resource: From<ResourceInner> {
     fn inner(&self) -> &ResourceInner;
 
-    fn new(sender: ResourceSender, src: Box<dyn DataSource>) -> Self {
+    fn new(sender: Sender, src: Box<dyn DataSource>) -> Self {
         let inner = ResourceInner::new(sender, src);
 
         inner.into()
@@ -94,17 +95,37 @@ pub enum ResourceResult {
     LoadFailed(String),
 }
 
-pub struct ResourceData {}
+#[derive(Clone)]
+pub struct ResourceData {
+    format: Format,
+    data: Vec<u8>,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum Format {
+    RawMesh,
+    Ktx2,
+}
 
 #[derive(Clone)]
-pub struct ResourceSender {}
+pub struct Sender {
+    sender: SyncSender<Arc<ResourceInner>>,
+}
 
-impl ResourceSender {
+impl Sender {
     fn send(&self, resource: Arc<ResourceInner>) {
-        todo!()
+        rayon::spawn(move || {
+            let data = resource.load_data();
+
+            let send_result = self.sender.send(resource);
+            if let Err(SendError(res)) = send_result {
+                log::warn!("Sending of resource {res} is failed");
+            }
+        });
     }
 }
 
 pub fn new_id() -> u64 {
-    todo!()
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+    COUNTER.fetch_add(1, Ordering::Relaxed)
 }
