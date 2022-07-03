@@ -1,7 +1,7 @@
 pub mod resource;
 pub mod scene;
-use winit::window::Window;
 use self::{resource::Sender, scene::Scene};
+use winit::window::Window;
 
 pub struct Render {
     device: wgpu::Device,

@@ -8,133 +8,115 @@ use std::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Mesh(Arc<ResourceInner>);
+pub struct Mesh(Arc<Inner>);
 
 impl Resource for Mesh {
-    fn inner(&self) -> &Arc<ResourceInner> {
+    fn inner(&self) -> &Arc<Inner> {
         &self.0
+    }
+
+    fn typ() -> Type {
+        Type::Mesh
     }
 }
 
-impl From<ResourceInner> for Mesh {
-    fn from(inner: ResourceInner) -> Self {
+impl From<Inner> for Mesh {
+    fn from(inner: Inner) -> Self {
         Self(Arc::new(inner))
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Texture(Arc<ResourceInner>);
+pub struct Texture(Arc<Inner>);
 
 impl Resource for Texture {
-    fn inner(&self) -> &Arc<ResourceInner> {
+    fn inner(&self) -> &Arc<Inner> {
         &self.0
+    }
+
+    fn typ() -> Type {
+        Type::Texture
     }
 }
 
-impl From<ResourceInner> for Texture {
-    fn from(inner: ResourceInner) -> Self {
+impl From<Inner> for Texture {
+    fn from(inner: Inner) -> Self {
         Self(Arc::new(inner))
     }
 }
 
-pub struct ResourceInner {
-    id: Id,
-    loaded: AtomicBool,
-    sender: Sender,
-    src: Box<dyn DataSource>,
+#[derive(Debug)]
+pub enum Type {
+    Mesh,
+    Texture,
 }
 
-impl ResourceInner {
-    pub fn new(sender: Sender, src: Box<dyn DataSource>) -> Self {
-        log::info!("Loading resource from: {src}");
-        Self {
-            id: new_id(),
-            loaded: Default::default(),
-            sender,
-            src,
-        }
+pub struct Inner {
+    id: UniqueId,
+    loaded: Arc<AtomicBool>,
+}
+
+impl Inner {
+    pub fn new(id: UniqueId, loaded: Arc<AtomicBool>) -> Self {
+        Self { id, loaded }
     }
 
-    pub fn id(&self) -> Id {
-        self.id
+    pub fn id(&self) -> &UniqueId {
+        &self.id
     }
 
     pub fn is_loaded(&self) -> bool {
         self.loaded.load(Ordering::SeqCst)
     }
-
-    pub fn load(self: &Arc<Self>) {
-        let sender = self.sender.clone();
-        let inner = self.clone();
-        rayon::spawn(move || {
-            let data = match inner.src.load() {
-                Ok(d) => d,
-                Err(e) => {
-                    log::warn!("resource loading failed: {e}");
-                    return;
-                }
-            };
-
-            let action = Action::SetData(inner.id, data);
-            sender.send(action);
-        });
-    }
 }
 
-impl fmt::Debug for ResourceInner {
+impl fmt::Debug for Inner {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("ResourceInner")
             .field("id", &self.id)
             .field("loaded", &self.loaded)
-            .field("src", &self.src)
             .finish()
     }
 }
 
-impl fmt::Display for ResourceInner {
+impl fmt::Display for Inner {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let state = match self.is_loaded() {
             true => "loaded",
             false => "not loaded",
         };
-        write!(f, "{state} resorce #{} from: {}", self.id, self.src)
+        write!(f, "{state} resource #{}", self.id)
     }
 }
 
-impl PartialEq for ResourceInner {
+impl PartialEq for Inner {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
     }
 }
 
-impl Eq for ResourceInner {}
+impl Eq for Inner {}
 
-impl std::hash::Hash for ResourceInner {
+impl std::hash::Hash for Inner {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.id.hash(state);
     }
 }
 
-impl Drop for ResourceInner {
-    fn drop(&mut self) {
-        self.sender.send(Action::Remove(self.id))
-    }
-}
+pub(crate) trait Resource: From<Inner> {
+    fn inner(&self) -> &Arc<Inner>;
 
-pub(crate) trait Resource: From<ResourceInner> {
-    fn inner(&self) -> &Arc<ResourceInner>;
+    fn typ() -> Type;
 
-    fn new(sender: Sender, src: Box<dyn DataSource>) -> Self {
-        let inner = ResourceInner::new(sender, src);
+    fn new(src: Box<dyn Source>, sender: Sender) -> Self {
+        let id = UniqueId::new(sender.clone());
+        let loaded = Arc::<AtomicBool>::default();
+        log::trace!("Sending Action::Add with {id} from: {src}");
+
+        let info = Info::new(id.raw(), Self::typ(), src, loaded.clone());
+        sender.send(Action::Add(info));
+        let inner = Inner::new(id, loaded);
         inner.into()
-    }
-
-    fn id(&self) -> Id {
-        self.inner().id
-    }
-
-    fn load(&self) {
-        self.inner().load();
     }
 
     fn is_loaded(&self) -> bool {
@@ -144,7 +126,60 @@ pub(crate) trait Resource: From<ResourceInner> {
 
 pub type Id = u64;
 
-pub trait DataSource: Send + Sync + fmt::Debug + fmt::Display {
+pub struct UniqueId {
+    id: Id,
+    sender: Sender,
+}
+
+impl UniqueId {
+    pub fn new(sender: Sender) -> Self {
+        Self {
+            id: new_id(),
+            sender,
+        }
+    }
+
+    pub fn raw(&self) -> Id {
+        self.id
+    }
+}
+
+impl fmt::Debug for UniqueId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("ResourceInner")
+            .field("id", &self.id)
+            .field("sende", &self.sender)
+            .finish()
+    }
+}
+
+impl fmt::Display for UniqueId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "unique id {}", self.id)
+    }
+}
+
+impl PartialEq for UniqueId {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for UniqueId {}
+
+impl std::hash::Hash for UniqueId {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl Drop for UniqueId {
+    fn drop(&mut self) {
+        self.sender.send(Action::Remove(self.id))
+    }
+}
+
+pub trait Source: Send + Sync + fmt::Debug + fmt::Display {
     fn load(&self) -> Result<Data, LoadError>;
 }
 
@@ -166,12 +201,31 @@ pub enum Format {
     Ktx2,
 }
 
+#[derive(Debug)]
+pub struct Info {
+    pub id: Id,
+    pub typ: Type,
+    pub src: Box<dyn Source>,
+    pub loaded: Arc<AtomicBool>,
+}
+
+impl Info {
+    pub fn new(id: Id, typ: Type, src: Box<dyn Source>, loaded: Arc<AtomicBool>) -> Self {
+        Self {
+            id,
+            typ,
+            src,
+            loaded,
+        }
+    }
+}
+
 pub enum Action {
-    SetData(Id, Data),
+    Add(Info),
     Remove(Id),
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Sender {
     sender: SyncSender<Action>,
 }
@@ -189,7 +243,7 @@ impl Sender {
     }
 }
 
-pub fn new_id() -> u64 {
+pub fn new_id() -> Id {
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     COUNTER.fetch_add(1, Ordering::Relaxed)
 }
@@ -198,7 +252,7 @@ pub fn new_id() -> u64 {
 mod tests {
     use std::{fmt, sync::mpsc};
 
-    use super::{Action, Data, DataSource, Format, LoadError, Mesh, Resource, Sender};
+    use super::{Action, Data, Format, LoadError, Mesh, Resource, Sender, Source};
 
     #[derive(Debug)]
     struct MeshDataSrc;
@@ -209,7 +263,7 @@ mod tests {
         }
     }
 
-    impl DataSource for MeshDataSrc {
+    impl Source for MeshDataSrc {
         fn load(&self) -> Result<Data, LoadError> {
             Ok(Data {
                 data: Default::default(),
@@ -219,33 +273,16 @@ mod tests {
     }
 
     #[test]
-    fn test_set_data_action() {
+    fn test_actions_sent() {
         let (tx, rx) = mpsc::sync_channel(10);
         let sender = Sender::new(tx);
 
-        let mesh = Mesh::new(sender, Box::new(MeshDataSrc));
-        mesh.load();
-
-        let action = rx.recv().unwrap();
-        assert!(matches!(action, Action::SetData(..)));
-    }
-
-    #[test]
-    fn test_remove_action() {
-        let (tx, rx) = mpsc::sync_channel(10);
-        let sender = Sender::new(tx);
-
-        let mesh = Mesh::new(sender, Box::new(MeshDataSrc));
-        mesh.load();
-        let mesh_id = mesh.id();
+        let mesh = Mesh::new(Box::new(MeshDataSrc), sender);
         std::mem::drop(mesh);
 
-        let _set_data_action = rx.recv().unwrap();
+        let add_action = rx.recv().unwrap();
+        assert!(matches!(add_action, Action::Add(..)));
         let remove_action = rx.recv().unwrap();
-        if let Action::Remove(id) = remove_action {
-            assert_eq!(id, mesh_id)
-        } else {
-            panic!("remove action expected");
-        }
+        assert!(matches!(remove_action, Action::Remove(..)));
     }
 }
