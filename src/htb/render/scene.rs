@@ -1,4 +1,4 @@
-use super::resource::{Mesh, Texture};
+use super::res::{Mesh, Texture};
 use std::collections::HashMap;
 
 pub struct Scene {

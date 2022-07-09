@@ -2,7 +2,7 @@ use std::{
     fmt::{self},
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
-        mpsc::{SendError, SyncSender},
+        mpsc::{self, SendError, SyncSender},
         Arc,
     },
 };
@@ -284,5 +284,33 @@ mod tests {
         assert!(matches!(add_action, Action::Add(..)));
         let remove_action = rx.recv().unwrap();
         assert!(matches!(remove_action, Action::Remove(..)));
+    }
+}
+
+pub struct Manager {
+    sender: Sender,
+    receiver: mpsc::Receiver<Action>,
+}
+
+impl Manager {
+    pub fn new(settings: &Settings) -> Self {
+        let (sender, receiver) = mpsc::sync_channel(settings.channel_size);
+        let sender = Sender::new(sender);
+        Self { sender, receiver }
+    }
+
+    pub fn sender(&self) -> Sender {
+        self.sender.clone()
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Settings {
+    pub channel_size: usize,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self { channel_size: 1024 }
     }
 }
