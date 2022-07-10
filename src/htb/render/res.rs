@@ -290,13 +290,23 @@ mod tests {
 pub struct Manager {
     sender: Sender,
     receiver: mpsc::Receiver<Action>,
+    thread_pool: rayon::ThreadPool,
 }
 
 impl Manager {
     pub fn new(settings: &Settings) -> Self {
         let (sender, receiver) = mpsc::sync_channel(settings.channel_size);
         let sender = Sender::new(sender);
-        Self { sender, receiver }
+        let thread_pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(settings.io_threads)
+            .build()
+            .expect("can't initialize rayon thread pool");
+
+        Self {
+            sender,
+            receiver,
+            thread_pool,
+        }
     }
 
     pub fn sender(&self) -> Sender {
@@ -307,10 +317,14 @@ impl Manager {
 #[derive(Debug, Clone, Copy)]
 pub struct Settings {
     pub channel_size: usize,
+    pub io_threads: usize,
 }
 
 impl Default for Settings {
     fn default() -> Self {
-        Self { channel_size: 1024 }
+        Self {
+            channel_size: 1024,
+            io_threads: 32,
+        }
     }
 }
