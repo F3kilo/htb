@@ -1,6 +1,8 @@
 pub mod res;
 pub mod scene;
 
+use std::sync::mpsc;
+
 use scene::Scene;
 use winit::window::Window;
 
@@ -16,7 +18,9 @@ impl Render {
         let instance = wgpu::Instance::new(settings.backends);
         let surface = unsafe { instance.create_surface(window) };
         let (device, queue) = pollster::block_on(Self::request_device(&instance, &surface))?;
-        let resource_manager = res::Manager::new(&settings.resources);
+
+        let (sender, receiver) = mpsc::sync_channel(settings.resources.channel_size);
+        let resource_manager = res::Manager::new(&settings.resources, sender);
 
         Some(Self {
             device,

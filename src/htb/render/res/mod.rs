@@ -1,3 +1,5 @@
+pub mod store;
+
 use std::{
     fmt::{self},
     sync::{
@@ -6,6 +8,8 @@ use std::{
         Arc,
     },
 };
+
+use self::store::PlacedData;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Mesh(Arc<Inner>);
@@ -45,10 +49,19 @@ impl From<Inner> for Texture {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Type {
     Mesh,
     Texture,
+}
+
+impl fmt::Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Type::Mesh => write!(f, "Mesh"),
+            Type::Texture => write!(f, "Texture"),
+        }
+    }
 }
 
 pub struct Inner {
@@ -108,7 +121,7 @@ pub(crate) trait Resource: From<Inner> {
 
     fn typ() -> Type;
 
-    fn new(src: Box<dyn Source>, sender: Sender) -> Self {
+    fn new(src: Box<dyn SourceFactory>, sender: Sender) -> Self {
         let id = UniqueId::new(sender.clone());
         let loaded = Arc::<AtomicBool>::default();
         log::trace!("Sending Action::Add with {id} from: {src}");
@@ -183,6 +196,10 @@ pub trait Source: Send + Sync + fmt::Debug + fmt::Display {
     fn load(&self) -> Result<Data, LoadError>;
 }
 
+pub trait SourceFactory: Send + Sync + fmt::Debug + fmt::Display {
+    fn source(&self) -> Box<dyn Source>;
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum LoadError {
     #[error("resource loading failed: {0}")]
@@ -205,16 +222,16 @@ pub enum Format {
 pub struct Info {
     pub id: Id,
     pub typ: Type,
-    pub src: Box<dyn Source>,
+    pub src_factory: Box<dyn SourceFactory>,
     pub loaded: Arc<AtomicBool>,
 }
 
 impl Info {
-    pub fn new(id: Id, typ: Type, src: Box<dyn Source>, loaded: Arc<AtomicBool>) -> Self {
+    pub fn new(id: Id, typ: Type, src: Box<dyn SourceFactory>, loaded: Arc<AtomicBool>) -> Self {
         Self {
             id,
             typ,
-            src,
+            src_factory: src,
             loaded,
         }
     }
@@ -252,23 +269,20 @@ pub fn new_id() -> Id {
 mod tests {
     use std::{fmt, sync::mpsc};
 
-    use super::{Action, Data, Format, LoadError, Mesh, Resource, Sender, Source};
+    use super::{Action, Mesh, Resource, Sender, Source, SourceFactory};
 
     #[derive(Debug)]
-    struct MeshDataSrc;
+    struct MeshDataSrcFactory;
 
-    impl fmt::Display for MeshDataSrc {
+    impl fmt::Display for MeshDataSrcFactory {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "MeshDataSrc")
         }
     }
 
-    impl Source for MeshDataSrc {
-        fn load(&self) -> Result<Data, LoadError> {
-            Ok(Data {
-                data: Default::default(),
-                format: Format::RawMesh,
-            })
+    impl SourceFactory for MeshDataSrcFactory {
+        fn source(&self) -> Box<dyn Source> {
+            todo!()
         }
     }
 
@@ -277,7 +291,7 @@ mod tests {
         let (tx, rx) = mpsc::sync_channel(10);
         let sender = Sender::new(tx);
 
-        let mesh = Mesh::new(Box::new(MeshDataSrc), sender);
+        let mesh = Mesh::new(Box::new(MeshDataSrcFactory), sender);
         std::mem::drop(mesh);
 
         let add_action = rx.recv().unwrap();
@@ -289,23 +303,30 @@ mod tests {
 
 pub struct Manager {
     sender: Sender,
-    receiver: mpsc::Receiver<Action>,
     thread_pool: rayon::ThreadPool,
+    storage: Arc<store::Storage>,
 }
 
 impl Manager {
-    pub fn new(settings: &Settings) -> Self {
+    pub fn new(settings: &Settings, data_sender: SyncSender<PlacedData>) -> Self {
         let (sender, receiver) = mpsc::sync_channel(settings.channel_size);
         let sender = Sender::new(sender);
+
+        let storage = Arc::new(store::Storage::new(&settings.storage));
+
         let thread_pool = rayon::ThreadPoolBuilder::new()
             .num_threads(settings.io_threads)
             .build()
             .expect("can't initialize rayon thread pool");
 
+        let action_processor = ActionProcessor::new(receiver, storage.clone(), data_sender);
+
+        thread_pool.install(move || action_processor.run());
+
         Self {
             sender,
-            receiver,
             thread_pool,
+            storage,
         }
     }
 
@@ -314,10 +335,80 @@ impl Manager {
     }
 }
 
+struct ActionProcessor {
+    receiver: mpsc::Receiver<Action>,
+    storage: Arc<store::Storage>,
+    data_sender: SyncSender<PlacedData>,
+}
+
+impl ActionProcessor {
+    pub fn new(
+        receiver: mpsc::Receiver<Action>,
+        storage: Arc<store::Storage>,
+        data_sender: SyncSender<PlacedData>,
+    ) -> Self {
+        Self {
+            receiver,
+            storage,
+            data_sender,
+        }
+    }
+
+    pub fn run(self) {
+        for action in self.receiver.iter() {
+            match action {
+                Action::Add(info) => self.add(info),
+                Action::Remove(id) => self.remove(id),
+            }
+        }
+    }
+
+    pub fn add(&self, info: Info) {
+        let source = info.src_factory.source();
+        let storage = self.storage.clone();
+        let sender = self.data_sender.clone();
+        rayon::spawn(move || {
+            let data = match source.load() {
+                Ok(data) => data,
+                Err(e) => {
+                    log::warn!("Can't load resoure from {source}: {e}");
+                    return;
+                }
+            };
+
+            let resource_type = info.typ;
+            let to_load = if let Some(to_load) = storage.add(info, &data) {
+                to_load
+            } else {
+                log::warn!(
+                    "Not enough place in storage for {} resource from {source}",
+                    resource_type
+                );
+                return;
+            };
+
+            let placed_data = PlacedData {
+                data: data.data,
+                to_load,
+            };
+            if sender.send(placed_data).is_err() {
+                log::warn!(
+                    "Try to send resoure data from {source} to gpu loader, but receiver is dead"
+                );
+            }
+        })
+    }
+
+    pub fn remove(&self, id: Id) {
+        self.storage.remove(id)
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct Settings {
     pub channel_size: usize,
     pub io_threads: usize,
+    pub storage: store::Settings,
 }
 
 impl Default for Settings {
@@ -325,6 +416,7 @@ impl Default for Settings {
         Self {
             channel_size: 1024,
             io_threads: 32,
+            storage: store::Settings {},
         }
     }
 }
