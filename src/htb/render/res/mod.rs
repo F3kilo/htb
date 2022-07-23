@@ -122,7 +122,7 @@ pub(crate) trait Resource: From<Inner> {
     fn typ() -> Type;
 
     fn new(src: Box<dyn SourceFactory>, sender: Sender) -> Self {
-        let id = UniqueId::new(sender.clone());
+        let id = UniqueId::new(sender.clone(), Self::typ());
         let loaded = Arc::<AtomicBool>::default();
         log::trace!("Sending Action::Add with {id} from: {src}");
 
@@ -142,13 +142,15 @@ pub type Id = u64;
 pub struct UniqueId {
     id: Id,
     sender: Sender,
+    typ: Type,
 }
 
 impl UniqueId {
-    pub fn new(sender: Sender) -> Self {
+    pub fn new(sender: Sender, typ: Type) -> Self {
         Self {
             id: new_id(),
             sender,
+            typ,
         }
     }
 
@@ -188,7 +190,7 @@ impl std::hash::Hash for UniqueId {
 
 impl Drop for UniqueId {
     fn drop(&mut self) {
-        self.sender.send(Action::Remove(self.id))
+        self.sender.send(Action::Remove(self.id, self.typ))
     }
 }
 
@@ -208,15 +210,43 @@ pub enum LoadError {
 
 #[derive(Clone)]
 pub struct Data {
-    format: Format,
-    data: Vec<u8>,
+    pub data: Vec<u8>,
+    pub meta: Metadata,
 }
 
 #[derive(Debug, Copy, Clone)]
-pub enum Format {
-    RawMesh,
-    Ktx2,
+pub enum Metadata {
+    Mesh(MeshMetadata),
+    Texture(TextureMetadata),
 }
+
+impl Metadata {
+    pub fn unwrap_mesh(&self) -> &MeshMetadata {
+        match self {
+            Metadata::Mesh(m) => m,
+            Metadata::Texture(_) => panic!("unwrap mesh from not mesh metadata"),
+        }
+    }
+
+    pub fn unwrap_texture(&self) -> &TextureMetadata {
+        match self {
+            Metadata::Texture(t) => t,
+            Metadata::Mesh(_) => panic!("unwrap texture from not texture metadata"),
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct MeshMetadata {
+    pub data_offset: u64,
+    pub index_count: u64,
+    pub vertex_offset: u64,
+    pub vertex_count: u64,
+    pub vertex_size: u64,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct TextureMetadata {}
 
 #[derive(Debug)]
 pub struct Info {
@@ -239,7 +269,7 @@ impl Info {
 
 pub enum Action {
     Add(Info),
-    Remove(Id),
+    Remove(Id, Type),
 }
 
 #[derive(Debug, Clone)]
@@ -358,7 +388,7 @@ impl ActionProcessor {
         for action in self.receiver.iter() {
             match action {
                 Action::Add(info) => self.add(info),
-                Action::Remove(id) => self.remove(id),
+                Action::Remove(id, typ) => self.remove(id, typ),
             }
         }
     }
@@ -377,7 +407,7 @@ impl ActionProcessor {
             };
 
             let resource_type = info.typ;
-            let to_load = if let Some(to_load) = storage.add(info, &data) {
+            let to_load = if let Some(to_load) = storage.add(info.id, &data) {
                 to_load
             } else {
                 log::warn!(
@@ -393,14 +423,16 @@ impl ActionProcessor {
             };
             if sender.send(placed_data).is_err() {
                 log::warn!(
-                    "Try to send resoure data from {source} to gpu loader, but receiver is dead"
+                    "Try to send resource data from {source} to gpu loader, but receiver is dead"
                 );
             }
         })
     }
 
-    pub fn remove(&self, id: Id) {
-        self.storage.remove(id)
+    pub fn remove(&self, id: Id, typ: Type) {
+        if self.storage.remove(id, typ).is_none() {
+            log::warn!("Try to remove unexisting resource with id {id}");
+        }
     }
 }
 
@@ -416,7 +448,7 @@ impl Default for Settings {
         Self {
             channel_size: 1024,
             io_threads: 32,
-            storage: store::Settings {},
+            storage: store::Settings::default(),
         }
     }
 }
